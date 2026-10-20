@@ -1,0 +1,330 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amex Points Calculator</title>
+<style>
+:root {
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  color: #e9eef7;
+  background: #0b1020;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at 80% 0, #203253, transparent 45%), #0b1020;
+}
+.wrap { max-width: 1050px; margin: auto; padding: 40px 20px 70px; }
+.tag { color: #9ad7c4; font-size: 12px; letter-spacing: 2px; font-weight: 800; }
+h1 { font-size: clamp(30px, 5vw, 48px); letter-spacing: -1.5px; margin: 12px 0; }
+h2 { font-size: 19px; margin: 0 0 20px; }
+p { color: #aebbd1; line-height: 1.6; }
+.layout { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; margin-top: 28px; }
+.card { background: #151e31; border: 1px solid #2b3950; border-radius: 20px; padding: 25px; }
+.row { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin: 13px 0; }
+.line { height: 1px; background: #334158; margin: 20px 0; }
+.metric { font-size: 34px; font-weight: 800; letter-spacing: -1px; color: #a8f2db; }
+.metric.secondary { color: #c4d4ff; }
+.mini { font-size: 13px; color: #aabbd1; }
+.result { background: #0e1929; border-radius: 13px; padding: 17px; margin: 12px 0; }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pill { font-size: 12px; background: #244d47; color: #b9f6e2; padding: 6px 9px; border-radius: 50px; }
+label { display: block; font-size: 13px; color: #b6c5d8; margin: 17px 0 8px; }
+select {
+  width: 100%; background: #0d1525; color: white;
+  border: 1px solid #34435b; padding: 12px;
+  border-radius: 10px; font-size: 15px;
+}
+.slider-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 17px; }
+.slider-head label { margin: 0; }
+.slider-value { font-size: 17px; color: #a8f2db; font-weight: 800; font-variant-numeric: tabular-nums; }
+.slider-wrap { padding: 5px 0 8px; }
+.slider-limits { display: flex; justify-content: space-between; color: #7f90a8; font-size: 11px; }
+
+/* Visible draggable slider knobs */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 12px;
+  margin: 16px 0 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #34435b;
+  cursor: pointer;
+  touch-action: pan-y;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #a8f2db;
+  border: 5px solid #102339;
+  box-shadow: 0 0 0 2px #a8f2db, 0 3px 12px #0009;
+  cursor: grab;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #a8f2db;
+  border: 5px solid #102339;
+  box-shadow: 0 0 0 2px #a8f2db;
+  cursor: grab;
+}
+input[type="range"]:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.12);
+}
+input[type="range"]:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 10px;
+}
+footer { margin-top: 25px; color: #8292a8; font-size: 12px; line-height: 1.7; }
+@media(max-width: 750px) {
+  .layout { grid-template-columns: 1fr; }
+  .wrap { padding-top: 24px; }
+  .card { padding: 19px; }
+  .metric { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="tag">CANADA · MEMBERSHIP REWARDS</div>
+  <h1>Amex points calculator</h1>
+  <p>Compare Gold and Cobalt using your actual monthly spending. No switching assumed. Drag the sliders to see the difference.</p>
+
+  <div class="layout">
+    <section class="card">
+      <h2>Your monthly spending</h2>
+      <div id="inputs"></div>
+      <div class="row">
+        <span>Total monthly spend</span>
+        <strong id="total">$750</strong>
+      </div>
+
+      <div class="line"></div>
+      <h2>Reward assumptions</h2>
+      <label for="cpp">Value per point (CAD)</label>
+      <select id="cpp">
+        <option value="1">1.0¢ · Statement credit</option>
+        <option value="1.5">1.5¢ · Travel estimate</option>
+        <option value="2">2.0¢ · Strong travel redemption</option>
+      </select>
+      <div id="assumptions"></div>
+
+      <label for="years">Comparison period</label>
+      <select id="years">
+        <option value="1">1 year</option>
+        <option value="2">2 years</option>
+        <option value="3" selected>3 years</option>
+        <option value="5">5 years</option>
+        <option value="10">10 years</option>
+      </select>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <h2 style="margin:0">Monthly earning</h2>
+        <span class="pill">LIVE</span>
+      </div>
+      <div class="columns">
+        <div class="result">
+          <div class="mini">COBALT</div>
+          <div class="metric" id="cp">—</div>
+          <div class="mini">points / month</div>
+        </div>
+        <div class="result">
+          <div class="mini">GOLD</div>
+          <div class="metric secondary" id="gp">—</div>
+          <div class="mini">points / month</div>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="mini">Extra Cobalt points per year</div>
+        <div class="metric" id="difference">—</div>
+      </div>
+
+      <div class="line"></div>
+      <h2>Net rewards comparison</h2>
+      <div class="row">
+        <span>Cobalt</span><strong id="cnet">—</strong>
+      </div>
+      <div class="row">
+        <span>Gold</span><strong id="gnet">—</strong>
+      </div>
+      <div class="result">
+        <div class="mini">Better net reward</div>
+        <div class="metric" id="winner">—</div>
+        <div class="mini" id="winnerDetail"></div>
+      </div>
+
+      <div class="line"></div>
+      <h2>Time to earn $750 on Cobalt</h2>
+      <div class="row">
+        <span>Spending only</span><strong id="time">—</strong>
+      </div>
+      <div class="row">
+        <span>Including welcome bonus</span><strong id="timeWelcome">—</strong>
+      </div>
+      <div class="row">
+        <span>Annual Cobalt fee</span><strong id="fee">—</strong>
+      </div>
+
+      <div class="line"></div>
+      <h2>Monthly points breakdown</h2>
+      <div id="breakdown"></div>
+      <footer>
+        Estimates use assumed Canadian Amex earning rates and editable welcome offers. Actual merchant eligibility, bonus limits, qualification requirements and redemption values may vary. Referral value is treated as cash received, not points transferred. All results are estimates.
+      </footer>
+    </section>
+  </div>
+</main>
+
+<script>
+const categories = [
+  ["Groceries", 250, 5, 2],
+  ["Restaurants / takeout", 200, 5, 1],
+  ["Gas", 100, 2, 2],
+  ["Transit", 0, 2, 1],
+  ["Eligible streaming", 0, 3, 1],
+  ["Other bills / purchases", 200, 1, 1]
+];
+
+const assumptions = [
+  ["goldWelcome", "Gold welcome points", 55000, 100000, 1250, "points"],
+  ["friend", "Friend referral value (CAD)", 200, 500, 10, "money"],
+  ["cobaltWelcome", "Cobalt welcome points", 15000, 30000, 1250, "points"],
+  ["goldFee", "Gold annual fee (CAD)", 250, 500, 5, "money"],
+  ["cobaltFee", "Cobalt monthly fee (CAD)", 15.99, 40, 0.01, "money"],
+  ["travel", "Usable Gold travel credit per year", 0, 200, 10, "money"]
+];
+
+const $ = id => document.getElementById(id);
+const n = id => Math.max(0, Number($(id).value) || 0);
+const fmt = x => Math.round(x).toLocaleString("en-CA");
+const money = x => new Intl.NumberFormat("en-CA", {
+  style: "currency",
+  currency: "CAD",
+  maximumFractionDigits: 2
+}).format(x);
+
+function makeSlider(id, label, value, max, step = 10, kind = "money") {
+  const maxLabel = kind === "points"
+    ? max.toLocaleString("en-CA") + " pts"
+    : "$" + max.toLocaleString("en-CA");
+
+  return `
+    <div class="slider-wrap">
+      <div class="slider-head">
+        <label for="${id}">${label}</label>
+        <output class="slider-value" id="out-${id}"></output>
+      </div>
+      <input id="${id}" type="range"
+        aria-label="${label}"
+        min="0" max="${max}" step="${step}" value="${value}">
+      <div class="slider-limits">
+        <span>$0</span><span>${maxLabel}</span>
+      </div>
+    </div>`;
+}
+
+categories.forEach((c, i) => {
+  $("inputs").insertAdjacentHTML(
+    "beforeend", makeSlider("cat" + i, c[0], c[1], 2000, 25)
+  );
+});
+
+$("assumptions").innerHTML = assumptions
+  .map(a => makeSlider(...a)).join("");
+
+function showSliders() {
+  document.querySelectorAll('input[type="range"]').forEach(el => {
+    const v = Number(el.value);
+    const out = $("out-" + el.id);
+    const isPoints = ["goldWelcome", "cobaltWelcome"].includes(el.id);
+
+    out.textContent = isPoints
+      ? v.toLocaleString("en-CA") + " pts"
+      : money(v);
+
+    const pct = 100 * (v - Number(el.min)) /
+      (Number(el.max) - Number(el.min));
+
+    el.style.background =
+      `linear-gradient(to right, #a8f2db ${pct}%, #34435b ${pct}%)`;
+  });
+}
+
+function calc() {
+  showSliders();
+
+  let total = 0, c = 0, g = 0, html = "";
+
+  categories.forEach((a, i) => {
+    const v = n("cat" + i);
+    total += v;
+    c += v * a[2];
+    g += v * a[3];
+
+    html += `<div class="row mini">
+      <span>${a[0]}</span>
+      <span>${fmt(v*a[2])} Cobalt · ${fmt(v*a[3])} Gold</span>
+    </div>`;
+  });
+
+  const cpp = n("cpp") / 100;
+  const years = n("years");
+  const cf = n("cobaltFee") * 12;
+  const gf = n("goldFee");
+  const cw = n("cobaltWelcome");
+  const gw = n("goldWelcome");
+  const friend = n("friend");
+  const travel = n("travel");
+
+  const cobaltNet = (c * 12 * years + cw) * cpp - cf * years;
+  const goldNet = (g * 12 * years + gw) * cpp
+    + friend - (gf - travel) * years;
+
+  $("total").textContent = money(total);
+  $("cp").textContent = fmt(c);
+  $("gp").textContent = fmt(g);
+  $("difference").textContent = fmt((c - g) * 12);
+  $("cnet").textContent = money(cobaltNet);
+  $("gnet").textContent = money(goldNet);
+
+  const winner = cobaltNet >= goldNet ? "Cobalt" : "Gold";
+  $("winner").textContent = winner;
+  $("winnerDetail").textContent =
+    money(Math.abs(cobaltNet - goldNet)) +
+    " more net rewards over " + years + " year(s)";
+
+  $("time").textContent = c * cpp > 0
+    ? (750 / (c * cpp) / 12).toFixed(2) + " years"
+    : "N/A";
+
+  $("timeWelcome").textContent = c * cpp > 0
+    ? (Math.max(0, 750 - cw * cpp) / (c * cpp) / 12).toFixed(2) + " years"
+    : "N/A";
+
+  $("fee").textContent = money(cf);
+  $("breakdown").innerHTML = html;
+}
+
+document.querySelectorAll("input, select").forEach(el => {
+  el.addEventListener("input", calc);
+});
+
+calc();
+</script>
+</body>
+</html>
